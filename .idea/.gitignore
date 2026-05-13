@@ -1,3 +1,12 @@
 # Default ignored files
 /shelf/
 /workspace.xml
+__pycache__/
+*.py[cod]
+.idea/
+.vscode/
+temp.bin
+temp.inp
+temp.rpt
+venv/
+.env

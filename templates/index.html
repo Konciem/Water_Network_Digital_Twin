@@ -1,15 +1,112 @@
 <!DOCTYPE html>
 <html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Twin - Sieć Wodociągowa</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .card { border: none; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .header-section { background: linear-gradient(135deg, #0d6efd 0%, #003d99 100%); color: white; padding: 40px 0; border-radius: 0 0 25px 25px; margin-bottom: 30px; }
+        .status-badge { font-size: 0.9rem; padding: 8px 15px; border-radius: 20px; }
+        .pressure-value { font-size: 2.5rem; font-weight: bold; color: #0d6efd; }
+    </style>
+</head>
 <body>
 
-<div class="container mt-5">
-    <div class="row dashboard-header">
-        <div class="col">
-            <h1></h1>
-            <p class="text-muted">Panel monitorowania infrastruktury wodociągowej</p>
+<div class="header-section shadow">
+    <div class="container text-center">
+        <h1><i class="bi bi-droplet-half"></i> Cyfrowy Bliźniak Sieci Wodociągowej</h1>
+        <p class="lead">System Monitoringu i Analizy Grafowej</p>
+        <span class="badge bg-success status-badge">
+            <i class="bi bi-cloud-check"></i> {{ status }}
+        </span>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card p-4 text-center">
+                <h3>Ciśnienie w Dom_A</h3>
+                <div class="pressure-value">{{ pressure }} <small class="text-muted" style="font-size: 1rem;">m H₂O</small></div>
+                <p class="text-muted">Aktualny odczyt z symulacji (3600s)</p>
+                <div class="mt-3">
+                    <button class="btn btn-outline-primary btn-sm" onclick="location.reload()">
+                        <i class="bi bi-arrow-clockwise"></i> Odśwież dane
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card p-4">
+                <h3><i class="bi bi-diagram-3"></i> Warstwa Grafowa</h3>
+                <p>Topologia sieci została zsynchronizowana z chmurą <strong>Neo4j AuraDB</strong>.</p>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Węzły (Junctions/Reservoirs)
+                        <span class="badge bg-primary rounded-pill">4</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Relacje (Pipes)
+                        <span class="badge bg-primary rounded-pill">3</span>
+                    </li>
+                </ul>
+                <div class="mt-auto pt-3 text-center">
+                    <a href="https://console.neo4j.io" target="_blank" class="btn btn-dark btn-sm">
+                        Otwórz Neo4j Browser <i class="bi bi-box-arrow-up-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card p-4">
+                <h3><i class="bi bi-list-check"></i> Wykaz elementów sieci</h3>
+                <table class="table table-hover mt-3">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nazwa</th>
+                            <th>Typ obiektu</th>
+                            <th>Koordynaty (X, Y)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Zrodlo_Glowne</td>
+                            <td>Reservoir</td>
+                            <td>(0.0, 0.0)</td>
+                        </tr>
+                        <tr>
+                            <td>Rozdzielacz</td>
+                            <td>Junction</td>
+                            <td>(5.0, 0.0)</td>
+                        </tr>
+                        <tr>
+                            <td>Dom_A</td>
+                            <td>Junction</td>
+                            <td>(10.0, 5.0)</td>
+                        </tr>
+                        <tr>
+                            <td>Dom_B</td>
+                            <td>Junction</td>
+                            <td>(10.0, -5.0)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
+
+<footer class="text-center mt-5 mb-4 text-muted">
+    <small>Projekt: Cyfrowy Bliźniak Sieci Wodociągowej &copy; 2024</small>
+</footer>
 
 </body>
 </html>
