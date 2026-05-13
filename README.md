@@ -11,7 +11,7 @@ The following tools are recommended for this project:
 * **Dashboard:** Streamlit or Flask.
 
 
-## Learning Resources [cite: 21]
+## Learning Resources
 * **Graph Theory:** *Graph representation of linear infrastructure in Smart City IoT systems*.
 * **EPANET:** [Official Website](https://www.epa.gov/water-research/epanet).
 * **WNTR:** [Documentation](https://usepa.github.io/WNTR/).
