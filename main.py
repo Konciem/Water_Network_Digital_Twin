@@ -28,32 +28,47 @@ def upload_to_neo4j(wn):
     driver.close()
 
 def get_graph_for_frontend():
-    nodes, edges = [], []
+    nodes = []
+    edges = []
     driver = GraphDatabase.driver(URI, auth=(USER, PASSWORD))
     with driver.session() as session:
         result_relations = session.run("MATCH (n:Node)-[r:PIPE]->(m:Node) RETURN n, r, m")
         node_ids = set()
         for record in result_relations:
-            n, m, r = record["n"], record["m"], record["r"]
-            for node in [n, m]:
-                if node["name"] not in node_ids:
-                    color = "#dc3545" if node["type"] == "Reservoir" else "#0d6efd"
-                    nodes.append({"id": node["name"], "label": node["name"], "x": node["x"] * 50, "y": -node["y"] * 50, "color": color, "size": 24 if node["type"] == "Reservoir" else 14})
-                    node_ids.add(node["name"])
-            edges.append({"from": n["name"], "to": m["name"], "label": r["name"], "width": 3})
+            n = record["n"]
+            m = record["m"]
+            r = record["r"]
+            if n["name"] not in node_ids:
+                color = "red" if n["type"] == "Reservoir" else "blue"
+                nodes.append({"id": n["name"], "label": n["name"], "x": n["x"] * 50, "y": -n["y"] * 50, "color": color, "size": 20})
+                node_ids.add(n["name"])
+            if m["name"] not in node_ids:
+                color = "red" if m["type"] == "Reservoir" else "blue"
+                nodes.append({"id": m["name"], "label": m["name"], "x": m["x"] * 50, "y": -m["y"] * 50, "color": color, "size": 20})
+                node_ids.add(m["name"])
+            edges.append({"from": n["name"], "to": m["name"], "label": r["name"], "width": 2})
 
         result_nodes = session.run("""
             MATCH (n:Node)
             OPTIONAL MATCH (n)-[out:PIPE]->(next:Node)
             OPTIONAL MATCH (prev:Node)-[inc:PIPE]->(n)
-            RETURN n.name AS name, n.type AS type, n.x AS x, n.y AS y,
+            RETURN n.name AS name, 
+                   n.type AS type, 
+                   n.x AS x, 
+                   n.y AS y,
                    collect(distinct next.name) + collect(distinct prev.name) AS connected_nodes,
                    collect(distinct out.name) + collect(distinct inc.name) AS connected_pipes
         """)
         table_data = []
         for record in result_nodes:
             connections = ", ".join(record["connected_nodes"]) + " (rury: " + ", ".join(record["connected_pipes"]) + ")"
-            table_data.append({"name": record["name"], "type": record["type"], "x": round(record["x"], 1), "y": round(record["y"], 1), "connections": connections})
+            table_data.append({
+                "name": record["name"],
+                "type": record["type"],
+                "x": round(record["x"], 1),
+                "y": round(record["y"], 1),
+                "connections": connections
+            })
     driver.close()
     return {"nodes": nodes, "edges": edges, "table_data": table_data}
 
@@ -65,34 +80,29 @@ def seconds_to_time_string(seconds):
 @app.route('/')
 def index():
     _, results = create_network()
-    
     step_index = request.args.get('step', default=0, type=int)
-    
     raw_seconds_list = list(results.node['pressure'].index)
     
     if step_index < 0 or step_index >= len(raw_seconds_list):
         step_index = 0
         
     time_seconds = raw_seconds_list[step_index]
-    
     readable_times_list = [seconds_to_time_string(s) for s in raw_seconds_list]
     current_time_str = readable_times_list[step_index]
 
     try:
         graph_data = get_graph_for_frontend()
-        db_status = "Połączono z Neo4j Desktop"
+        db_status = "Polaczono z Neo4j"
     except Exception as e:
-        db_status = "Błąd połączenia z bazą"
+        db_status = "Brak polaczenia"
         graph_data = {"nodes": [], "edges": [], "table_data": []}
 
     try:
         pressures_dict = results.node['pressure'].loc[time_seconds].to_dict()
         demands_dict = results.node['demand'].loc[time_seconds].to_dict()
         heads_dict = results.node['head'].loc[time_seconds].to_dict()
-        
         quality_dict = results.node['quality'].loc[time_seconds].to_dict() if 'quality' in results.node else {}
     except Exception as e:
-        print(f"Błąd odczytu z EPANET: {e}")
         pressures_dict, demands_dict, heads_dict, quality_dict = {}, {}, {}, {}
 
     for row in graph_data.get("table_data", []):
@@ -113,6 +123,6 @@ if __name__ == '__main__':
     wn, _ = create_network()
     try:
         upload_to_neo4j(wn)
-    except Exception as e:
-        print(f"Błąd Neo4j: {e}")
+    except:
+        print("Blad bazy")
     app.run(debug=True, use_reloader=False)
