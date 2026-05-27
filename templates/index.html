@@ -8,19 +8,29 @@
     <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
     
     <style>
-        body { background-color: #f8f9fa; padding: 25px; color: #212529; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .main-card { background-color: white; border: 1px solid #dee2e6; border-radius: 8px; padding: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-        .kafelek { background-color: white; border: 1px solid #dee2e6; border-radius: 6px; padding: 15px; margin-bottom: 20px; }
-        #mapa-sieci { width: 100%; height: 440px; border: 1px solid #ced4da; border-radius: 6px; background-color: #ffffff; }
-        .tabela-wynikow { font-size: 0.9rem; }
+        body { 
+            background-color: #f8f9fa; 
+            padding: 15px; 
+            color: #212529; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transform: scale(0.8); 
+            transform-origin: top center;
+            width: 111.11%; 
+            margin-left: -5.55%;
+        }
+        .main-card { background-color: white; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .kafelek { background-color: white; border: 1px solid #dee2e6; border-radius: 6px; padding: 12px; margin-bottom: 15px; }
+        
+        #mapa-sieci { width: 100%; height: 380px; border: 1px solid #ced4da; border-radius: 6px; background-color: #ffffff; }
+        .tabela-wynikow { font-size: 0.85rem; }
         
         /* WYŚWIETLACZ CZASU */
         .badge-czas { 
-            font-size: 1.1rem; 
+            font-size: 1rem; 
             background-color: #f8f9fa; 
             color: #dc3545; 
             border: 2px solid #dc3545; 
-            padding: 4px 12px; 
+            padding: 3px 10px; 
             border-radius: 4px;
             font-family: monospace;
         }
@@ -29,10 +39,10 @@
         .custom-slider {
             -webkit-appearance: none;
             width: 100%;
-            height: 8px;
+            height: 7px;
             border-radius: 4px;
             background: #e9ecef;
-            border: 1px solid #ced4da; /* Wyraźny zarys paska */
+            border: 1px solid #ced4da;
             outline: none;
         }
 
@@ -40,11 +50,11 @@
         .custom-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 20px;
-            height: 20px;
+            width: 18px;
+            height: 18px;
             border-radius: 50%;
-            background: #0d6efd; /* Wyraźny niebieski kolor studencki */
-            border: 2px solid #004085; /* Ciemny obrys kropki */
+            background: #0d6efd;
+            border: 2px solid #004085;
             cursor: pointer;
             transition: background .15s ease-in-out;
         }
@@ -55,8 +65,8 @@
 
         /* Styl kropki suwaka (Firefox) */
         .custom-slider::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
+            width: 18px;
+            height: 18px;
             border-radius: 50%;
             background: #0d6efd;
             border: 2px solid #004085;
@@ -68,7 +78,7 @@
             background: #0056b3;
         }
         
-        .parametr-wartosc { font-size: 1.2rem; font-weight: bold; display: block; margin-top: 5px; }
+        .parametr-wartosc { font-size: 1.1rem; font-weight: bold; display: block; margin-top: 3px; }
     </style>
 </head>
 <body>
@@ -98,7 +108,7 @@
     </div>
 
     <div class="kafelek">
-        <h5 class="mb-3 text-secondary"></i> Topologia sieci z bazy grafowej</h5>
+        <h5 class="mb-3 text-secondary"> Topologia sieci z bazy grafowej</h5>
         <div id="mapa-sieci"></div>
         <small class="text-muted d-block mt-2">Kliknij węzeł na schemacie, aby załadować parametry telemetryczne poniżej.</small>
     </div>
