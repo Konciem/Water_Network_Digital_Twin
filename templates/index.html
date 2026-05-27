@@ -8,29 +8,27 @@
     <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
     
     <style>
-        body { 
-            background-color: #f8f9fa; 
-            padding: 15px; 
-            color: #212529; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            transform: scale(0.8); 
-            transform-origin: top center;
-            width: 111.11%; 
-            margin-left: -5.55%;
-        }
-        .main-card { background-color: white; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-        .kafelek { background-color: white; border: 1px solid #dee2e6; border-radius: 6px; padding: 12px; margin-bottom: 15px; }
+        /* Globalne zmniejszenie elementów bez psucia koordynatów myszki */
+        html, body { font-size: 0.88rem; }
+        body { background-color: #f8f9fa; padding: 12px; color: #212529; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         
-        #mapa-sieci { width: 100%; height: 380px; border: 1px solid #ced4da; border-radius: 6px; background-color: #ffffff; }
-        .tabela-wynikow { font-size: 0.85rem; }
+        .main-card { background-color: white; border: 1px solid #dee2e6; border-radius: 6px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .kafelek { background-color: white; border: 1px solid #dee2e6; border-radius: 6px; padding: 10px; margin-bottom: 12px; }
+        
+        /* Zmniejszona wysokość mapy, żeby zmieścić komponenty */
+        #mapa-sieci { width: 100%; height: 350px; border: 1px solid #ced4da; border-radius: 6px; background-color: #ffffff; }
+        .tabela-wynikow { font-size: 0.8rem; }
+        
+        h2 { font-size: 1.5rem; }
+        h5 { font-size: 1.05rem; }
         
         /* WYŚWIETLACZ CZASU */
         .badge-czas { 
-            font-size: 1rem; 
+            font-size: 0.95rem; 
             background-color: #f8f9fa; 
             color: #dc3545; 
             border: 2px solid #dc3545; 
-            padding: 3px 10px; 
+            padding: 2px 8px; 
             border-radius: 4px;
             font-family: monospace;
         }
@@ -39,7 +37,7 @@
         .custom-slider {
             -webkit-appearance: none;
             width: 100%;
-            height: 7px;
+            height: 6px;
             border-radius: 4px;
             background: #e9ecef;
             border: 1px solid #ced4da;
@@ -50,8 +48,8 @@
         .custom-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
             border-radius: 50%;
             background: #0d6efd;
             border: 2px solid #004085;
@@ -65,8 +63,8 @@
 
         /* Styl kropki suwaka (Firefox) */
         .custom-slider::-moz-range-thumb {
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
             border-radius: 50%;
             background: #0d6efd;
             border: 2px solid #004085;
@@ -78,13 +76,13 @@
             background: #0056b3;
         }
         
-        .parametr-wartosc { font-size: 1.1rem; font-weight: bold; display: block; margin-top: 3px; }
+        .parametr-wartosc { font-size: 1.05rem; font-weight: bold; display: block; margin-top: 2px; }
     </style>
 </head>
 <body>
 
 <div class="container main-card">
-    <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
+    <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
         <div>
             <h2 class="m-0"><i class="bi bi-droplet text-primary"></i> Cyfrowy Bliźniak Infrastruktury</h2>
         </div>
@@ -95,11 +93,11 @@
     </div>
 
     <div class="kafelek bg-light">
-        <label for="time-slider" class="form-label fw-bold mb-2"> Oś czasu symulacji (krok co 30 min):</label>
+        <label for="time-slider" class="form-label fw-bold mb-1"> Oś czasu symulacji (krok co 30 min):</label>
         
-        <div class="py-2">
+        <div class="py-1">
             <input type="range" class="custom-slider" id="time-slider" min="0" max="{{ available_times|length - 1 }}" value="{{ step_index }}">
-            <div class="d-flex justify-content-between text-muted mt-2" style="font-size: 0.85rem;">
+            <div class="d-flex justify-content-between text-muted mt-1" style="font-size: 0.8rem;">
                 <span> Północ (00:00)</span>
                 <span class="text-danger fw-bold">Wybrana godzina: {{ current_time_str }}</span>
                 <span> Koniec doby (24:00)</span>
@@ -108,15 +106,15 @@
     </div>
 
     <div class="kafelek">
-        <h5 class="mb-3 text-secondary"> Topologia sieci z bazy grafowej</h5>
+        <h5 class="mb-2 text-secondary"> Topologia sieci z bazy grafowej</h5>
         <div id="mapa-sieci"></div>
-        <small class="text-muted d-block mt-2">Kliknij węzeł na schemacie, aby załadować parametry telemetryczne poniżej.</small>
+        <small class="text-muted d-block mt-1">Kliknij węzeł na schemacie, aby załadować parametry telemetryczne poniżej.</small>
     </div>
 
     <div id="detail-panel" class="kafelek" style="display: none; border-left: 4px solid #0d6efd; background-color: #fdfdfd;">
-        <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+        <div class="d-flex justify-content-between align-items-center border-bottom pb-1 mb-2">
             <h5 class="m-0 text-primary"> Telemetria wybranego obiektu</h5>
-            <button type="button" class="btn-close" style="font-size: 0.8rem;" onclick="document.getElementById('detail-panel').style.display='none';"></button>
+            <button type="button" class="btn-close" style="font-size: 0.7rem;" onclick="document.getElementById('detail-panel').style.display='none';"></button>
         </div>
         
         <div class="row text-center g-2">
@@ -131,11 +129,11 @@
             </div>
             <div class="col-12 col-md-6 text-md-start ps-md-4">
                 <small class="text-muted">Sąsiedztwo topologiczne w bazie Neo4j:</small>
-                <div id="det-connections" class="p-2 bg-light rounded border mt-1" style="font-size: 0.85rem; max-height: 60px; overflow-y: auto;">-</div>
+                <div id="det-connections" class="p-1 bg-light rounded border mt-1" style="font-size: 0.8rem; max-height: 50px; overflow-y: auto;">-</div>
             </div>
         </div>
 
-        <div class="row text-center mt-3 pt-3 border-top bg-light mx-0 rounded py-2">
+        <div class="row text-center mt-2 pt-2 border-top bg-light mx-0 rounded py-1">
             <div class="col-3">
                 <small class="text-muted">1. Ciśnienie</small>
                 <span id="det-pressure" class="parametr-wartosc text-primary">-</span>
@@ -160,7 +158,7 @@
     </div>
 
     <div class="kafelek">
-        <h5 class="mb-3 text-secondary">Zestawienie tabelaryczne parametrów węzłowych</h5>
+        <h5 class="mb-2 text-secondary">Zestawienie tabelaryczne parametrów węzłowych</h5>
         <div class="table-responsive">
             <table class="table table-hover table-bordered tabela-wynikow align-middle m-0">
                 <thead class="table-light text-secondary">
@@ -187,7 +185,7 @@
                             {% endif %}
                         </td>
                         <td><small class="text-muted">{{ row.x }}, {{ row.y }}</small></td>
-                        <td><small class="text-secondary" style="font-size: 0.8rem;">{{ row.connections }}</small></td>
+                        <td><small class="text-secondary" style="font-size: 0.75rem;">{{ row.connections }}</small></td>
                         <td class="text-end fw-bold text-primary">{{ row.pressure }}</td>
                         <td class="text-end fw-bold text-success">{{ row.demand }}</td>
                         <td class="text-end fw-bold text-danger">{{ row.head }}</td>
