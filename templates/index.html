@@ -6,12 +6,24 @@
     <title>Digital Twin - Sieć Wodociągowa</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+
     <style>
         body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         .card { border: none; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
         .header-section { background: linear-gradient(135deg, #0d6efd 0%, #003d99 100%); color: white; padding: 40px 0; border-radius: 0 0 25px 25px; margin-bottom: 30px; }
         .status-badge { font-size: 0.9rem; padding: 8px 15px; border-radius: 20px; }
-        .pressure-value { font-size: 2.5rem; font-weight: bold; color: #0d6efd; }
+        .slider-time { font-weight: bold; color: #dc3545; font-size: 1.5rem; background-color: #fff3cd; padding: 2px 10px; border-radius: 8px; border: 1px solid #ffeba2; }
+        
+        #viz {
+            width: 100%;
+            height: 450px;
+            background-color: #ffffff;
+            border-radius: 10px;
+        }
+        .detail-badge { font-size: 1rem; }
+        .param-title { font-size: 0.82rem; color: #6c757d; text-transform: uppercase; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -28,85 +40,210 @@
 
 <div class="container">
     <div class="row">
-        <div class="col-md-6">
-            <div class="card p-4 text-center">
-                <h3>Ciśnienie w Dom_A</h3>
-                <div class="pressure-value">{{ pressure }} <small class="text-muted" style="font-size: 1rem;">m H₂O</small></div>
-                <p class="text-muted">Aktualny odczyt z symulacji (3600s)</p>
-                <div class="mt-3">
-                    <button class="btn btn-outline-primary btn-sm" onclick="location.reload()">
-                        <i class="bi bi-arrow-clockwise"></i> Odśwież dane
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6">
+        <div class="col-12">
             <div class="card p-4">
-                <h3><i class="bi bi-diagram-3"></i> Warstwa Grafowa</h3>
-                <p>Topologia sieci została zsynchronizowana z chmurą <strong>Neo4j AuraDB</strong>.</p>
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        Węzły (Junctions/Reservoirs)
-                        <span class="badge bg-primary rounded-pill">4</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        Relacje (Pipes)
-                        <span class="badge bg-primary rounded-pill">3</span>
-                    </li>
-                </ul>
-                <div class="mt-auto pt-3 text-center">
-                    <a href="https://console.neo4j.io/projects/8f28e5d9-f660-4319-834f-f291451c134c/tools/explore" target="_blank" class="btn btn-dark btn-sm">
-                        Otwórz Neo4j Browser <i class="bi bi-box-arrow-up-right"></i>
-                    </a>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h3><i class="bi bi-clock-history text-warning"></i> Kontrola osi czasu (Start: 00:00 p.n.)</h3>
+                    <div>Bieżąca godzina monitoringu: <span class="slider-time" id="time-display">{{ current_time_str }}</span></div>
+                </div>
+                <input type="range" class="form-range" id="time-slider" min="0" max="{{ available_times|length - 1 }}" value="{{ step_index }}" step="1">
+                <div class="d-flex justify-content-between text-muted mt-1" style="font-size: 0.85rem;">
+                    <span>Północ (00:00)</span>
+                    <span>Interwał pomiarowy: co 30 minut</span>
+                    <span>Koniec doby (24:00)</span>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="row mt-4">
+    <div class="row">
         <div class="col-12">
             <div class="card p-4">
-                <h3><i class="bi bi-list-check"></i> Wykaz elementów sieci</h3>
-                <table class="table table-hover mt-3">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Nazwa</th>
-                            <th>Typ obiektu</th>
-                            <th>Koordynaty (X, Y)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Zrodlo_Glowne</td>
-                            <td>Reservoir</td>
-                            <td>(0.0, 0.0)</td>
-                        </tr>
-                        <tr>
-                            <td>Rozdzielacz</td>
-                            <td>Junction</td>
-                            <td>(5.0, 0.0)</td>
-                        </tr>
-                        <tr>
-                            <td>Dom_A</td>
-                            <td>Junction</td>
-                            <td>(10.0, 5.0)</td>
-                        </tr>
-                        <tr>
-                            <td>Dom_B</td>
-                            <td>Junction</td>
-                            <td>(10.0, -5.0)</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h3><i class="bi bi-diagram-3-fill text-primary"></i> Interaktywna Mapa Cyfrowego Bliźniaka</h3>
+                    <small class="text-secondary"><i class="bi bi-info-circle"></i> Kliknij węzeł na mapie, aby otworzyć panel parametrów</small>
+                </div>
+                <p class="text-muted">Położenie węzłów odzwierciedla rzeczywistą geometrię z modelu EPANET.</p>
+                <div id="viz" class="border mt-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row" id="detail-panel" style="display: none;">
+        <div class="col-12">
+            <div class="card p-4 border border-primary bg-light shadow-sm">
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                    <h4 class="m-0 text-primary"><i class="bi bi-activity"></i> Monitorowane parametry pracy wybranego obiektu</h4>
+                    <button type="button" class="btn-close" onclick="document.getElementById('detail-panel').style.display='none';"></button>
+                </div>
+                <div class="row g-4 text-center">
+                    <div class="col-md-2 text-start">
+                        <span class="param-title d-block">Identyfikator</span>
+                        <span class="badge bg-dark detail-badge" id="det-name">-</span>
+                        <div class="mt-2" id="det-type">-</div>
+                    </div>
+                    <div class="col-md-2">
+                        <span class="param-title d-block">Położenie (X, Y)</span>
+                        <strong class="text-dark fs-6 d-block mt-1" id="det-coords">-</strong>
+                    </div>
+                    <div class="col-md-2 border-start">
+                        <span class="param-title d-block">1. Ciśnienie</span>
+                        <span class="text-primary fw-bold fs-4 d-block" id="det-pressure">-</span>
+                    </div>
+                    <div class="col-md-2 border-start">
+                        <span class="param-title d-block">2. Zapotrzebowanie</span>
+                        <span class="text-success fw-bold fs-4 d-block" id="det-demand">-</span>
+                    </div>
+                    <div class="col-md-2 border-start">
+                        <span class="param-title d-block">3. Wys. Piezometryczna</span>
+                        <span class="text-danger fw-bold fs-4 d-block" id="det-head">-</span>
+                    </div>
+                    <div class="col-md-2 border-start">
+                        <span class="param-title d-block">4. Wiek wody (Świeżość)</span>
+                        <span class="text-info fw-bold fs-4 d-block" id="det-quality">-</span>
+                    </div>
+                    <div class="col-12 text-start mt-3">
+                        <span class="param-title d-block mb-1">Powiązania topologiczne (Sąsiedztwo w bazie Neo4j)</span>
+                        <p class="mb-0 text-dark border-start border-success border-3 ps-2 py-2 bg-white rounded shadow-sm" id="det-connections" style="font-size: 0.9rem;">-</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-2">
+        <div class="col-12">
+            <div class="card p-4">
+                <h3><i class="bi bi-list-check"></i> Pełny wykaz elementów sieci i monitorowane metryki</h3>
+                <p class="text-muted">Struktura pochodzi z bazy <strong>Neo4j</strong>. Poniższe dane dotyczą godziny: <span class="fw-bold text-danger">{{ current_time_str }}</span> dób symulacji.</p>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mt-3" id="network-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Nazwa</th>
+                                <th>Typ elementu</th>
+                                <th>Współrzędne</th>
+                                <th>Elementy powiązane</th>
+                                <th class="text-end text-primary">1. Ciśnienie</th>
+                                <th class="text-end text-success">2. Zapotrzebowanie</th>
+                                <th class="text-end text-danger">3. Wysokość H</th>
+                                <th class="text-end text-info">4. Wiek wody</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in graph_data.table_data %}
+                            <tr style="cursor: pointer;" onclick="selectNodeFromTable('{{ row.name }}')">
+                                <td><span class="badge bg-dark" style="font-size: 0.95rem;">{{ row.name }}</span></td>
+                                <td>
+                                    {% if row.type == "Reservoir" %}
+                                    <span class="badge bg-danger"><i class="bi bi-database-fill"></i> Reservoir</span>
+                                    {% else %}
+                                    <span class="badge bg-primary"><i class="bi bi-node-plus-fill"></i> Junction</span>
+                                    {% endif %}
+                                </td>
+                                <td><small class="text-muted">({{ row.x }}, {{ row.y }})</small></td>
+                                <td>
+                                    <span class="text-wrap text-secondary" style="font-size: 0.85rem; display: block; max-width: 250px;">
+                                        {{ row.connections }}
+                                    </span>
+                                </td>
+                                <td class="text-end fw-bold text-primary">{{ row.pressure }} <small class="text-muted fw-normal" style="font-size: 0.75rem;">m</small></td>
+                                <td class="text-end fw-bold text-success">{{ row.demand }} <small class="text-muted fw-normal" style="font-size: 0.75rem;">L/s</small></td>
+                                <td class="text-end fw-bold text-danger">{{ row.head }} <small class="text-muted fw-normal" style="font-size: 0.75rem;">m</small></td>
+                                <td class="text-end fw-bold text-info">{{ row.quality }} <small class="text-muted fw-normal" style="font-size: 0.75rem;">h</small></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <footer class="text-center mt-5 mb-4 text-muted">
-    <small>Projekt: Cyfrowy Bliźniak Sieci Wodociągowej &copy; 2024</small>
+    <small>Projekt: Cyfrowy Bliźniak Sieci Wodociągowej &copy; 2026</small>
 </footer>
+
+<script type="text/javascript">
+    var graphData = {{ graph_data | tojson }};
+    var availableTimes = {{ available_times | tojson }};
+
+    // --- LOGIKA OBSŁUGI SUWAKA CZASU ---
+    var slider = document.getElementById('time-slider');
+    var timeDisplay = document.getElementById('time-display');
+
+    // Przy zmianie suwaka, przeładuj stronę podając indeks kroku
+    slider.addEventListener('change', function() {
+        window.location.href = "/?step=" + this.value;
+    });
+
+    // Dynamiczna zmiana napisu w trakcie przeciągania suwaka
+    slider.addEventListener('input', function() {
+        timeDisplay.innerText = availableTimes[this.value];
+    });
+
+    // --- BUDOWANIE MAPY GRAFOWEJ VIS.JS ---
+    var container = document.getElementById('viz');
+    var data = {
+        nodes: new vis.DataSet(graphData.nodes),
+        edges: new vis.DataSet(graphData.edges)
+    };
+    
+    var options = {
+        nodes: {
+            shape: 'dot',
+            font: { size: 15, color: '#212529', face: 'Segoe UI', background: '#ffffff' }
+        },
+        edges: {
+            arrows: { to: { enabled: true, scaleFactor: 0.4 } },
+            font: { size: 11, align: 'top', color: '#6c757d' },
+            color: { color: '#adb5bd', highlight: '#0d6efd' }
+        },
+        physics: { enabled: false }
+    };
+    
+    var network = new vis.Network(container, data, options);
+
+    // --- PANEL DETALI OBIEKTU ---
+    function showNodeDetails(nodeName) {
+        var matchedObject = graphData.table_data.find(function(item) {
+            return item.name === nodeName;
+        });
+
+        if (matchedObject) {
+            document.getElementById('det-name').innerText = matchedObject.name;
+            document.getElementById('det-coords').innerText = "(" + matchedObject.x + ", " + matchedObject.y + ")";
+            document.getElementById('det-connections').innerHTML = '<i class="bi bi-link-45deg text-success"></i> ' + matchedObject.connections;
+            
+            document.getElementById('det-pressure').innerHTML = matchedObject.pressure + " <small style='font-size:0.75rem; color:#6c757d;'>m H₂O</small>";
+            document.getElementById('det-demand').innerHTML = matchedObject.demand + " <small style='font-size:0.75rem; color:#6c757d;'>L/s</small>";
+            document.getElementById('det-head').innerHTML = matchedObject.head + " <small style='font-size:0.75rem; color:#6c757d;'>m</small>";
+            document.getElementById('det-quality').innerHTML = matchedObject.quality + " <small style='font-size:0.75rem; color:#6c757d;'>h</small>";
+
+            var typeSpan = document.getElementById('det-type');
+            if (matchedObject.type === "Reservoir") {
+                typeSpan.innerHTML = '<span class="badge bg-danger"><i class="bi bi-database-fill"></i> Reservoir</span>';
+            } else {
+                typeSpan.innerHTML = '<span class="badge bg-primary"><i class="bi bi-node-plus-fill"></i> Junction</span>';
+            }
+
+            document.getElementById('detail-panel').style.display = 'block';
+            document.getElementById('detail-panel').scrollIntoView({ behavior: 'smooth' });
+        }
+    }
+
+    network.on("click", function(params) {
+        if (params.nodes.length > 0) {
+            showNodeDetails(params.nodes[0]);
+        }
+    });
+
+    function selectNodeFromTable(nodeName) {
+        network.selectNodes([nodeName]);
+        showNodeDetails(nodeName);
+    }
+</script>
 
 </body>
 </html>

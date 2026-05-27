@@ -1,54 +1,118 @@
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, request
 from neo4j import GraphDatabase
 from network_model import create_network
 
 app = Flask(__name__)
 
 # --- KONFIGURACJA NEO4J ---
-URI = "neo4j+s://8b7b73ab.databases.neo4j.io"
-USER = "8b7b73ab"
-PASSWORD = "1W3sAH8HRpTKTQn9obDqaozoquQuau23v_BIIruH6VY"
+URI = "neo4j://127.0.0.1:7687"
+USER = "neo4j"
+PASSWORD = "haslohaslo"
+
+def upload_data_transaction(tx, wn):
+    tx.run("MATCH (n) DETACH DELETE n")
+    for node_name, node in wn.nodes():
+        x, y = node.coordinates
+        tx.run("CREATE (n:Node {name: $name, x: $x, y: $y, type: $type})", 
+               name=node_name, x=float(x), y=float(y), type=str(type(node).__name__))
+    for pipe_name, pipe in wn.pipes():
+        tx.run("""
+            MATCH (a:Node {name: $start}), (b:Node {name: $end})
+            CREATE (a)-[:PIPE {name: $p_name, diameter: $diam}]->(b)
+        """, start=pipe.start_node_name, end=pipe.end_node_name, p_name=pipe_name, diam=pipe.diameter)
 
 def upload_to_neo4j(wn):
     driver = GraphDatabase.driver(URI, auth=(USER, PASSWORD))
     with driver.session() as session:
-        # Czyścimy bazę
-        session.run("MATCH (n) DETACH DELETE n")
-        
-        # Import węzłów
-        for node_name, node in wn.nodes():
-            x, y = node.coordinates
-            session.run("""
-                CREATE (n:Node {name: $name, x: $x, y: $y, type: $type})
-            """, name=node_name, x=float(x), y=float(y), type=str(type(node).__name__))
-            
-        # Import rur
-        for pipe_name, pipe in wn.pipes():
-            session.run("""
-                MATCH (a:Node {name: $start}), (b:Node {name: $end})
-                CREATE (a)-[:PIPE {name: $p_name, diameter: $diam}]->(b)
-            """, start=pipe.start_node_name, end=pipe.end_node_name, 
-                 p_name=pipe_name, diam=pipe.diameter)
+        session.execute_write(upload_data_transaction, wn)
     driver.close()
+
+def get_graph_for_frontend():
+    nodes, edges = [], []
+    driver = GraphDatabase.driver(URI, auth=(USER, PASSWORD))
+    with driver.session() as session:
+        result_relations = session.run("MATCH (n:Node)-[r:PIPE]->(m:Node) RETURN n, r, m")
+        node_ids = set()
+        for record in result_relations:
+            n, m, r = record["n"], record["m"], record["r"]
+            for node in [n, m]:
+                if node["name"] not in node_ids:
+                    color = "#dc3545" if node["type"] == "Reservoir" else "#0d6efd"
+                    nodes.append({"id": node["name"], "label": node["name"], "x": node["x"] * 50, "y": -node["y"] * 50, "color": color, "size": 24 if node["type"] == "Reservoir" else 14})
+                    node_ids.add(node["name"])
+            edges.append({"from": n["name"], "to": m["name"], "label": r["name"], "width": 3})
+
+        result_nodes = session.run("""
+            MATCH (n:Node)
+            OPTIONAL MATCH (n)-[out:PIPE]->(next:Node)
+            OPTIONAL MATCH (prev:Node)-[inc:PIPE]->(n)
+            RETURN n.name AS name, n.type AS type, n.x AS x, n.y AS y,
+                   collect(distinct next.name) + collect(distinct prev.name) AS connected_nodes,
+                   collect(distinct out.name) + collect(distinct inc.name) AS connected_pipes
+        """)
+        table_data = []
+        for record in result_nodes:
+            connections = ", ".join(record["connected_nodes"]) + " (rury: " + ", ".join(record["connected_pipes"]) + ")"
+            table_data.append({"name": record["name"], "type": record["type"], "x": round(record["x"], 1), "y": round(record["y"], 1), "connections": connections})
+    driver.close()
+    return {"nodes": nodes, "edges": edges, "table_data": table_data}
+
+def seconds_to_time_string(seconds):
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    return f"{hours:02d}:{minutes:02d}"
 
 @app.route('/')
 def index():
-    wn, results = create_network()
+    _, results = create_network()
     
-    # Przesyłamy sieć do bazy przy każdym odświeżeniu (lub raz na starcie)
-    try:
-        upload_to_neo4j(wn)
-        db_status = "Połączono z Neo4j AuraDB"
-    except:
-        db_status = "Błąd połączenia z bazą"
+    step_index = request.args.get('step', default=0, type=int)
+    
+    raw_seconds_list = list(results.node['pressure'].index)
+    
+    if step_index < 0 or step_index >= len(raw_seconds_list):
+        step_index = 0
+        
+    time_seconds = raw_seconds_list[step_index]
+    
+    readable_times_list = [seconds_to_time_string(s) for s in raw_seconds_list]
+    current_time_str = readable_times_list[step_index]
 
-    # Wyciągamy ciśnienie z Dom_A
-    p_a = results.node['pressure'].loc[3600, 'Dom_A']
+    try:
+        graph_data = get_graph_for_frontend()
+        db_status = "Połączono z Neo4j Desktop"
+    except Exception as e:
+        db_status = "Błąd połączenia z bazą"
+        graph_data = {"nodes": [], "edges": [], "table_data": []}
+
+    try:
+        pressures_dict = results.node['pressure'].loc[time_seconds].to_dict()
+        demands_dict = results.node['demand'].loc[time_seconds].to_dict()
+        heads_dict = results.node['head'].loc[time_seconds].to_dict()
+        
+        quality_dict = results.node['quality'].loc[time_seconds].to_dict() if 'quality' in results.node else {}
+    except Exception as e:
+        print(f"Błąd odczytu z EPANET: {e}")
+        pressures_dict, demands_dict, heads_dict, quality_dict = {}, {}, {}, {}
+
+    for row in graph_data.get("table_data", []):
+        node_name = row["name"]
+        row["pressure"] = round(pressures_dict.get(node_name, 0.0), 2)
+        row["demand"] = round(demands_dict.get(node_name, 0.0) * 1000, 3)
+        row["head"] = round(heads_dict.get(node_name, 0.0), 2)
+        row["quality"] = round(quality_dict.get(node_name, 0.0) / 3600, 1)
     
-    # Renderujemy szablon i przekazujemy dane
     return render_template('index.html', 
                            status=db_status, 
-                           pressure=round(p_a, 2))
+                           graph_data=graph_data,
+                           current_time_str=current_time_str,
+                           step_index=step_index,
+                           available_times=readable_times_list)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    wn, _ = create_network()
+    try:
+        upload_to_neo4j(wn)
+    except Exception as e:
+        print(f"Błąd Neo4j: {e}")
+    app.run(debug=True, use_reloader=False)
