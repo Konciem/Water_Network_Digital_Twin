@@ -1,0 +1,69 @@
+/* Globalne zmniejszenie elementów bez psucia koordynatów myszki */
+html, body { font-size: 0.88rem; }
+body { background-color: #f8f9fa; padding: 12px; color: #212529; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+
+.main-card { background-color: white; border: 1px solid #dee2e6; border-radius: 6px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+.kafelek { background-color: white; border: 1px solid #dee2e6; border-radius: 6px; padding: 10px; margin-bottom: 12px; }
+
+/* Zmniejszona wysokość mapy, żeby zmieścić komponenty */
+#mapa-sieci { width: 100%; height: 350px; border: 1px solid #ced4da; border-radius: 6px; background-color: #ffffff; }
+.tabela-wynikow { font-size: 0.8rem; }
+
+h2 { font-size: 1.5rem; }
+h5 { font-size: 1.05rem; }
+
+/* WYŚWIETLACZ CZASU */
+.badge-czas { 
+    font-size: 0.95rem; 
+    background-color: #f8f9fa; 
+    color: #dc3545; 
+    border: 2px solid #dc3545; 
+    padding: 2px 8px; 
+    border-radius: 4px;
+    font-family: monospace;
+}
+
+/* STYLIZACJA SAMEGO SLIDERA (SUWAKA) */
+.custom-slider {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 4px;
+    background: #e9ecef;
+    border: 1px solid #ced4da;
+    outline: none;
+}
+
+/* Styl kropki suwaka (Chrome, Safari, Opera, Edge) */
+.custom-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #0d6efd;
+    border: 2px solid #004085;
+    cursor: pointer;
+    transition: background .15s ease-in-out;
+}
+
+.custom-slider::-webkit-slider-thumb:hover {
+    background: #0056b3;
+}
+
+/* Styl kropki suwaka (Firefox) */
+.custom-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #0d6efd;
+    border: 2px solid #004085;
+    cursor: pointer;
+    transition: background .15s ease-in-out;
+}
+
+.custom-slider::-moz-range-thumb:hover {
+    background: #0056b3;
+}
+
+.parametr-wartosc { font-size: 1.05rem; font-weight: bold; display: block; margin-top: 2px; }
